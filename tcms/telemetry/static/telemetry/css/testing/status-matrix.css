@@ -1,0 +1,13 @@
+.table-with-horizontal-scroll {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+}
+
+table > tbody > tr > td.green {
+    border-left: 5px solid #92d400; /* pf-green-400 */
+}
+
+table > tbody > tr > td.red {
+    border-left: 5px solid #cc0000; /* pf-red-100 */
+}
