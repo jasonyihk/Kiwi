@@ -79,34 +79,31 @@ def status_matrix(query=None):
             :return: List, containing the information about the test executions
             :rtype: list
         """
-
+    print('+++++ inside status_matrix')
     if query is None:
         query = {}
 
-    test_plans = TestPlan.objects.filter(**query)
-
-    test_runs = TestRun.objects.filter(plan__in=test_plans)
-    test_executions = TestExecution.objects.filter(run__in=test_runs)
-
     data_set = []
-    for test_case in TestCase.to_xmlrpc({'case_run__in': test_executions}, distinct=True):
-        data_set_entry = {'case': test_case}
+    row = {'tc_id': 0}
+    for test_execution in TestExecution.objects.filter(**query).values(
+            'pk', 'status__name',
+            'run_id', 'run__summary',
+            'case_id', 'case__summary').order_by('case_id', 'run_id'):
+        if test_execution['case_id'] == row['tc_id']:
+            row['runs'].append(test_execution)
+        else:
+            data_set.append(row)
 
-        for test_run in test_runs:
-            test_executions = TestExecution.to_xmlrpc({
-                'run_id': test_run.run_id,
-                'case_id': test_case['case_id']
-            })
-            if test_executions:
-                test_execution = test_executions[0]
-                with override('en'):
-                    if test_execution['status'] in TestExecutionStatus.failure_status_names:
-                        test_execution['color'] = 'red'
-                    elif test_execution['status'] == TestExecutionStatus.PASSED:
-                        test_execution['color'] = 'green'
-                key = 'run-{}'.format(test_run.run_id)
-                data_set_entry[key] = test_execution
+            row = {
+                'tc_id': test_execution['case_id'],
+                'tc_summary': test_execution['case__summary'],
+                'runs': [test_execution],
+            }
 
-        data_set.append(data_set_entry)
+    # first row is special so remove it
+    del data_set[0]
 
+    from pprint import pprint
+    print("**** data_set =")
+    pprint(data_set)
     return data_set
